@@ -1,5 +1,8 @@
 # Tongue
 
+[![Hex.pm](https://img.shields.io/hexpm/v/tongue.svg?maxAge=2592000)](https://hex.pm/packages/tongue)
+[![Hex.pm](https://img.shields.io/hexpm/l/tongue.svg?maxAge=2592000)](https://hex.pm/packages/tongue)
+
 Elixir port of Nakatani Shuyo's natural language detector
 
 ## Installation

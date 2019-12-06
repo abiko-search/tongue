@@ -20,7 +20,7 @@ defmodule Tongue do
   
   ## Examples
   
-      iex> Tongue.detect("El microprocesador (o simplemente procesador) es el circuito integrado central más complejo de un sistema informático; a modo de ilustración, se le suele llamar por analogía el «cerebro» de un ordenador.", subset)
+      iex> Tongue.detect("El microprocesador (o simplemente procesador) es el circuito integrado central más complejo de un sistema informático; a modo de ilustración, se le suele llamar por analogía el «cerebro» de un ordenador.", Tongue.subset(~w(en es fr)a))
       [es: 0.9999977345738683]
 
   """

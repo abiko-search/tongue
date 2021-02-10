@@ -12,7 +12,7 @@ Add `tongue` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:tongue, "~> 1.0.2"}]
+  [{:tongue, "~> 2.0"}]
 end
 ```
 
@@ -28,9 +28,10 @@ iex> Tongue.detect("The octopus is a soft-bodied, eight-armed mollusc of the ord
 Detect language within subset of supported languages:
 
 ```elixir
-iex> subset = Tongue.subset(~w(ru en es fr)a)
-iex> Tongue.detect("El microprocesador (o simplemente procesador) es el circuito integrado central más complejo de un sistema informático; a modo de ilustración, se le suele llamar por analogía el «cerebro» de un ordenador.", subset)
-[es: 0.9999977345738683]
+use Mix.Config
+
+config :tongue,
+  languages: ~w(en ru fr de)a
 ```
 
 ## Languages

@@ -4,7 +4,7 @@ defmodule Tongue.MixProject do
   def project do
     [
       app: :tongue,
-      version: "1.0.2",
+      version: "2.0.0",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -17,16 +17,17 @@ defmodule Tongue.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :poison]
+      extra_applications: [:logger, :poison],
+      mod: {Tongue.App, []}
     ]
   end
 
   defp deps do
     [
       {:poison, "~> 3.1", only: [:dev, :test]},
-      {:dialyxir, "~> 1.0.0-rc.3", only: [:dev, :test], runtime: false},
-      {:credo, "~> 0.10.0", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.19.0", only: :dev, runtime: false}
+      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.22.0", only: :dev, runtime: false}
     ]
   end
 

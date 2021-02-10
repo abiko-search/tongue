@@ -1,7 +1,7 @@
 defmodule Tongue.Detector do
   @moduledoc false
 
-  alias Tongue.Data
+  use GenServer
 
   @n_gram 3
   @n_trial 7
@@ -12,14 +12,27 @@ defmodule Tongue.Detector do
   @convolution_threshold 0.99999
   @base_frequency 10_000
 
-  @latin1_excluded Data.messages("NGram.LATIN1_EXCLUDE")
+  @messages "priv/messages.binary"
+            |> File.read!()
+            |> :erlang.binary_to_term()
+
+  @blocks "priv/unicode_blocks.binary"
+          |> File.read!()
+          |> :erlang.binary_to_term()
+
+  @builtin_languages "priv/profiles.binary"
+                     |> File.read!()
+                     |> :erlang.binary_to_term()
+                     |> Map.get(:languages)
+
+  @latin1_excluded @messages["NGram.LATIN1_EXCLUDE"]
 
   @normalized_vi_chars ~w(NORMALIZED_VI_CHARS_0300 NORMALIZED_VI_CHARS_0301 NORMALIZED_VI_CHARS_0303
                           NORMALIZED_VI_CHARS_0309 NORMALIZED_VI_CHARS_0323)
-                       |> Enum.map(&Data.messages/1)
+                       |> Enum.map(&@messages[&1])
 
-  @to_normalize_chars Data.messages("TO_NORMALIZE_VI_CHARS")
-  @dmark_class Data.messages("DMARK_CLASS")
+  @to_normalize_chars @messages["TO_NORMALIZE_VI_CHARS"]
+  @dmark_class @messages["DMARK_CLASS"]
 
   # CJK Kanji Normalization mapping
 
@@ -50,25 +63,75 @@ defmodule Tongue.Detector do
               NGram.KANJI_7_28 NGram.KANJI_7_29 NGram.KANJI_7_32 NGram.KANJI_7_33 NGram.KANJI_7_35
               NGram.KANJI_7_37)
            |> Enum.flat_map(fn key ->
-             message = Data.messages(key)
+             message = @messages[key]
              representative = List.first(message)
              Enum.map(message, &{&1, representative})
            end)
            |> Map.new()
 
-  def detect(text, languages, ngram_frequencies) do
+  def start_link(_) do
+    GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
+  end
+
+  def init(_) do
+    profiles =
+      :tongue
+      |> Application.app_dir("priv/profiles.binary")
+      |> File.read!()
+      |> :erlang.binary_to_term()
+      |> Map.get(:ngrams_frequencies)
+      |> subset(Application.get_env(:tongue, :languages))
+
+    {:ok, profiles}
+  end
+
+  def detect(text) do
+    GenServer.call(__MODULE__, {:detect, text})
+  end
+
+  def languages() do
+    GenServer.call(__MODULE__, :languages)
+  end
+
+  def handle_call(:languages, _from, {languages, ngram_frequencies}) do
+    {:reply, languages, {languages, ngram_frequencies}}
+  end
+
+  def handle_call({:detect, text}, _from, {languages, ngram_frequencies}) do
     # Cleaning text to detect
     # (eliminate URL, e-mail address and Latin sentence if it is not written in Latin alphabet).
 
-    text
-    |> String.replace(~r(https?://[-_.?&~;+=/#0-9A-Za-z]{1,2076}), " ")
-    |> String.replace(~r([-_.0-9A-Za-z]{1,64}@[-_0-9A-Za-z]{1,255}[-_.0-9A-Za-z]{1,255}), " ")
-    |> String.to_charlist()
-    |> clean
-    |> normalize
-    |> extract_ngrams(ngram_frequencies)
-    |> calculate_probabilities(languages, ngram_frequencies)
-    |> sort_probabilities(languages)
+    probabilities =
+      text
+      |> String.replace(~r(https?://[-_.?&~;+=/#0-9A-Za-z]{1,2076}), " ")
+      |> String.replace(~r([-_.0-9A-Za-z]{1,64}@[-_0-9A-Za-z]{1,255}[-_.0-9A-Za-z]{1,255}), " ")
+      |> String.to_charlist()
+      |> clean
+      |> normalize
+      |> extract_ngrams(ngram_frequencies)
+      |> calculate_probabilities(languages, ngram_frequencies)
+      |> sort_probabilities(languages)
+
+    {:reply, probabilities, {languages, ngram_frequencies}}
+  end
+
+  def subset(ngram_frequencies, languages) when is_nil(languages) do
+    {@builtin_languages, ngram_frequencies}
+  end
+
+  def subset(ngram_frequencies, languages) do
+    new_ngram_frequencies =
+      Enum.into(ngram_frequencies, %{}, fn {ngram, frequencies} ->
+        {_, frequencies} =
+          @builtin_languages
+          |> Enum.zip(frequencies)
+          |> Enum.filter(fn {language, _} -> language in languages end)
+          |> Enum.unzip
+
+        {ngram, frequencies}
+      end)
+
+    {Enum.sort(languages), new_ngram_frequencies}
   end
 
   def clean(text) do
@@ -271,7 +334,7 @@ defmodule Tongue.Detector do
     |> Enum.filter(fn {_, probability} -> probability > @probability_threshold end)
   end
 
-  Enum.map(Data.blocks(), fn {from, to, block} ->
+  Enum.map(@blocks, fn {from, to, block} ->
     def unicode_block(char) when char in unquote(from)..unquote(to) do
       unquote(block)
     end

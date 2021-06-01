@@ -4,8 +4,8 @@ defmodule Tongue.MixProject do
   def project do
     [
       app: :tongue,
-      version: "2.0.0",
-      elixir: "~> 1.7",
+      version: "2.1.0",
+      elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),

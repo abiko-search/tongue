@@ -61,7 +61,7 @@ defmodule Mix.Tasks.Tongue.Prebuild do
       |> Enum.map(fn filename ->
         Path.join("./data/profiles", filename)
         |> File.read!()
-        |> Poison.decode!()
+        |> Jason.decode!()
       end)
       |> Enum.sort_by(& &1["name"])
 

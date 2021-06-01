@@ -121,7 +121,8 @@ defmodule Tongue.Detector do
 
   def subset(ngram_frequencies, languages) do
     new_ngram_frequencies =
-      Enum.into(ngram_frequencies, %{}, fn {ngram, frequencies} ->
+
+      for {ngram, frequencies} <- ngram_frequencies, into: %{} do
         {_, frequencies} =
           @builtin_languages
           |> Enum.zip(frequencies)
@@ -129,7 +130,7 @@ defmodule Tongue.Detector do
           |> Enum.unzip
 
         {ngram, frequencies}
-      end)
+      end
 
     {Enum.sort(languages), new_ngram_frequencies}
   end

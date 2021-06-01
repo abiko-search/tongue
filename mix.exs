@@ -17,17 +17,16 @@ defmodule Tongue.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :poison],
       mod: {Tongue.App, []}
     ]
   end
 
   defp deps do
     [
-      {:poison, "~> 3.1", only: [:dev, :test]},
-      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:jason, "~> 1.2", only: [:dev, :test]},
+      {:dialyxir, "~> 1.1", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.22.0", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.24", only: :dev, runtime: false}
     ]
   end
 

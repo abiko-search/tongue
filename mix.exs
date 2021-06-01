@@ -40,7 +40,7 @@ defmodule Tongue.MixProject do
       files: ["lib/tongue*", "priv", "mix.exs", "README*", "LICENSE*"],
       maintainers: ["Danila Poyarkov"],
       licenses: ["Apache 2.0"],
-      links: %{"GitHub" => "https://github.com/dannote/tongue"}
+      links: %{"GitHub" => "https://github.com/abiko-search/tongue"}
     ]
   end
 end

@@ -12,7 +12,7 @@ Add `tongue` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:tongue, "~> 2.0"}]
+  [{:tongue, "~> 2.2"}]
 end
 ```
 

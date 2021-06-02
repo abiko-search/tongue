@@ -30,7 +30,7 @@ defmodule Mix.Tasks.Tongue.Prebuild do
         end
       end)
       |> Enum.reject(&is_nil/1)
-      |> :erlang.term_to_binary()
+      |> :erlang.term_to_binary([:compressed])
     )
   end
 
@@ -49,7 +49,7 @@ defmodule Mix.Tasks.Tongue.Prebuild do
           |> String.to_charlist()
         }
       end)
-      |> :erlang.term_to_binary()
+      |> :erlang.term_to_binary([:compressed])
     )
   end
 
@@ -91,7 +91,7 @@ defmodule Mix.Tasks.Tongue.Prebuild do
         languages: languages,
         ngrams_frequencies: ngrams_frequencies
       }
-      |> :erlang.term_to_binary()
+      |> :erlang.term_to_binary([:compressed])
     )
   end
 end

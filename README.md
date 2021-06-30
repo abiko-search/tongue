@@ -16,6 +16,17 @@ def deps do
 end
 ```
 
+Add `:tongue` as an extra application in your `mix.exs`:
+
+```
+  def application do
+    [
+      extra_applications: [(...), :tongue],
+      (...)
+    ]
+  end
+```
+
 ## Usage
 
 Detect language and return a scored list of languages:

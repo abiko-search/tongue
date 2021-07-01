@@ -2,7 +2,7 @@
 
 [![Hex.pm](https://img.shields.io/hexpm/v/tongue.svg?maxAge=2592000)](https://hex.pm/packages/tongue)
 [![Hex.pm](https://img.shields.io/hexpm/l/tongue.svg?maxAge=2592000)](https://hex.pm/packages/tongue)
-![](https://github.com/dannote/tongue/workflows/Elixir%20CI/badge.svg)
+![](https://github.com/abiko-search/tongue/workflows/Elixir%20CI/badge.svg)
 
 Elixir port of Nakatani Shuyo's natural language detector
 

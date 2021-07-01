@@ -37,7 +37,7 @@ defmodule Tongue.MixProject do
   defp package do
     [
       name: :tongue,
-      files: ["lib/tongue*", "priv", "mix.exs", "README*", "LICENSE*"],
+      files: ~w(lib/tongue* priv mix.exs README* LICENSE*),
       maintainers: ["Danila Poyarkov"],
       licenses: ["Apache 2.0"],
       links: %{"GitHub" => "https://github.com/abiko-search/tongue"}

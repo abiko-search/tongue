@@ -1,6 +1,8 @@
 defmodule Tongue.Detector do
   @moduledoc false
 
+  import Nx.Defn
+
   use GenServer
 
   @n_gram 3
@@ -114,7 +116,7 @@ defmodule Tongue.Detector do
       |> clean
       |> normalize
       |> extract_ngrams(ngram_frequencies)
-      |> calculate_probabilities(languages, ngram_frequencies)
+      |> calculate_probabilities_x(languages, ngram_frequencies)
       |> filter_probabilities(languages)
 
     {:reply, probabilities, {languages, ngram_frequencies}}
@@ -328,6 +330,54 @@ defmodule Tongue.Detector do
 
   def fill(value, len) do
     Nx.tile(Nx.tensor([value], type: {:f, 32}), [len])
+  end
+
+  def calculate_probabilities_x(ngrams, languages, ngram_frequencies) do
+    frequencies =
+      ngrams
+      |> Enum.map(&Map.get(ngram_frequencies, &1))
+      |> Nx.concatenate()
+      |> Nx.reshape({:auto, length(languages)})
+
+    zero = Nx.tile(Nx.tensor(0, type: {:f, 32}), [length(languages)])
+    initial_probabilities = Nx.tile(Nx.tensor(1 / length(languages), type: {:f, 32}), [length(languages)])
+
+    calculate_probabilities_n(zero, initial_probabilities, frequencies)
+  end
+
+  @defn_compiler EXLA
+  defn calculate_probabilities_n(zero, initial_probabilities, frequencies) do
+    while {x = 0, a = zero, c = initial_probabilities, d = frequencies}, x < @n_trial + 1 do
+      weight = Nx.random_uniform({1}, @alpha_default, @alpha_default + @alpha_width) / @base_frequency
+
+      {_, probabilities, _, _} =
+        while {i = 1, b = c, z = d, w = weight}, i < @iteration_limit do
+          {ngrams_count, _} = Nx.shape(z)
+
+          probabilities =
+            z[Nx.random_uniform({1}, 0, ngrams_count - 1)]
+            |> Nx.add(w)
+            |> Nx.multiply(b)
+
+          if rem(i, 5) == 0 do
+            normalized_probabilities = Nx.divide(probabilities, Nx.sum(probabilities))
+
+            max_probability = Nx.reduce_max(normalized_probabilities)
+
+            if max_probability > @convolution_threshold do
+              {@iteration_limit, normalized_probabilities, z, w}
+            else
+              {i + 1, normalized_probabilities, z, w}
+            end
+          else
+            {i + 1, probabilities, z, w}
+          end
+        end
+
+      {x + 1, a + probabilities, c, d}
+    end
+    |> elem(1)
+    |> Nx.divide(@n_trial)
   end
 
   def filter_probabilities(probabilities, languages) do

@@ -3,15 +3,22 @@ on: push
 
 jobs:
   build:
+    name: Elixir ${{matrix.elixir}} / OTP ${{matrix.otp}}
+    strategy:
+      matrix:
+        otp: [24.x]
+        elixir: [1.12.x]
     runs-on: ubuntu-latest
-    container:
-      image: elixir:1.10-slim
     steps:
-    - uses: actions/checkout@v1
-    - name: Install dependencies
-      run: |
-        mix local.rebar --force
-        mix local.hex --force
-        mix deps.get
-    - name: Run tests
-      run: mix test
+      - uses: actions/checkout@v2
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{matrix.otp}} 
+          elixir-version: ${{matrix.elixir}}
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Run tests
+        run: mix test

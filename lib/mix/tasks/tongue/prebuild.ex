@@ -89,7 +89,10 @@ defmodule Mix.Tasks.Tongue.Prebuild do
       "./priv/profiles.binary",
       %{
         languages: languages,
-        ngrams_frequencies: ngrams_frequencies
+        ngrams_frequencies:
+          for {ngram, f} <- ngrams_frequencies, into: %{} do
+            {ngram, f |> Nx.tensor(type: {:f, 32}) |> Nx.to_binary()}
+          end
       }
       |> :erlang.term_to_binary([:compressed])
     )

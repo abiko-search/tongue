@@ -12,13 +12,13 @@ defmodule Tongue do
 
   @doc """
   Detects a language. Returns a keyword of scored languages.
-  
+
   ## Parameters
 
     - `text` - a text string
-  
+
   ## Examples
-  
+
       iex> Tongue.detect("El microprocesador (o simplemente procesador) es el circuito integrado central más complejo de un sistema informático; a modo de ilustración, se le suele llamar por analogía el «cerebro» de un ordenador.")
       [es: 0.9999977345738683]
 

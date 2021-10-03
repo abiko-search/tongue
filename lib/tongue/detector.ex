@@ -74,7 +74,7 @@ defmodule Tongue.Detector do
   end
 
   def init(_) do
-    profiles =
+    {languages, ngram_frequencies} =
       :tongue
       |> Application.app_dir("priv/profiles.binary")
       |> File.read!()
@@ -82,7 +82,12 @@ defmodule Tongue.Detector do
       |> Map.get(:ngrams_frequencies)
       |> subset(Application.get_env(:tongue, :languages))
 
-    {:ok, profiles}
+    ngram_frequencies =
+      ngram_frequencies
+      |> Enum.map(fn {ngram, frequencies} -> {ngram, Nx.from_binary(frequencies, {:f, 32})} end)
+      |> Enum.into(%{})
+
+    {:ok, {languages, ngram_frequencies}}
   end
 
   def detect(text) do
@@ -110,7 +115,7 @@ defmodule Tongue.Detector do
       |> normalize
       |> extract_ngrams(ngram_frequencies)
       |> calculate_probabilities(languages, ngram_frequencies)
-      |> sort_probabilities(languages)
+      |> filter_probabilities(languages)
 
     {:reply, probabilities, {languages, ngram_frequencies}}
   end
@@ -121,13 +126,12 @@ defmodule Tongue.Detector do
 
   def subset(ngram_frequencies, languages) do
     new_ngram_frequencies =
-
       for {ngram, frequencies} <- ngram_frequencies, into: %{} do
         {_, frequencies} =
           @builtin_languages
           |> Enum.zip(frequencies)
           |> Enum.filter(fn {language, _} -> language in languages end)
-          |> Enum.unzip
+          |> Enum.unzip()
 
         {ngram, frequencies}
       end
@@ -288,50 +292,47 @@ defmodule Tongue.Detector do
   def calculate_probabilities(ngrams, languages, ngram_frequencies) do
     :rand.seed(:exrop, :erlang.timestamp())
 
-    initial_probabilities = List.duplicate(1 / length(languages), length(languages))
+    initial_probabilities = fill(1 / length(languages), length(languages))
 
     1..@n_trial
-    |> Enum.reduce(List.duplicate(0, length(languages)), fn _, probabilities ->
+    |> Enum.reduce(fill(0, length(languages)), fn _, probabilities ->
       weight = (@alpha_default + :rand.uniform() * @alpha_width) / @base_frequency
 
-      probabilities
-      |> Enum.zip(update_probabilities(initial_probabilities, ngrams, ngram_frequencies, weight))
-      |> Enum.map(fn {probability, try_probability} ->
-        probability + try_probability
+      Enum.reduce_while(0..@iteration_limit, initial_probabilities, fn i, probabilities ->
+        ngram = Enum.at(ngrams, :rand.uniform(length(ngrams)) - 1)
+
+        probabilities =
+          ngram_frequencies
+          |> Map.get(ngram)
+          |> Nx.add(weight)
+          |> Nx.multiply(probabilities)
+
+        if rem(i, 5) == 0 do
+          normalized_probabilities = Nx.divide(probabilities, Nx.sum(probabilities))
+
+          max_probability = Nx.reduce_max(normalized_probabilities)
+
+          if Nx.to_scalar(max_probability) > @convolution_threshold do
+            {:halt, normalized_probabilities}
+          else
+            {:cont, normalized_probabilities}
+          end
+        else
+          {:cont, probabilities}
+        end
       end)
+      |> Nx.add(probabilities)
     end)
-    |> Enum.map(&(&1 / @n_trial))
+    |> Nx.divide(@n_trial)
   end
 
-  def update_probabilities(probabilities, ngrams, ngram_frequencies, weight, i \\ 0) do
-    ngram = Enum.at(ngrams, :rand.uniform(length(ngrams)) - 1)
-
-    probabilities =
-      ngram_frequencies
-      |> Map.get(ngram)
-      |> Enum.zip(probabilities)
-      |> Enum.map(fn {frequency, probability} ->
-        probability * (weight + frequency)
-      end)
-
-    if rem(i, 5) == 0 do
-      probabilities_sum = Enum.sum(probabilities)
-      normalized_probabilities = Enum.map(probabilities, &(&1 / probabilities_sum))
-      max_probability = Enum.max(normalized_probabilities)
-
-      if max_probability > @convolution_threshold or i >= @iteration_limit do
-        normalized_probabilities
-      else
-        update_probabilities(normalized_probabilities, ngrams, ngram_frequencies, weight, i + 1)
-      end
-    else
-      update_probabilities(probabilities, ngrams, ngram_frequencies, weight, i + 1)
-    end
+  def fill(value, len) do
+    Nx.tile(Nx.tensor([value], type: {:f, 32}), [len])
   end
 
-  def sort_probabilities(probabilities, languages) do
+  def filter_probabilities(probabilities, languages) do
     languages
-    |> Enum.zip(probabilities)
+    |> Enum.zip(Nx.to_flat_list(probabilities))
     |> Enum.filter(fn {_, probability} -> probability > @probability_threshold end)
   end
 
@@ -348,14 +349,15 @@ defmodule Tongue.Detector do
   end
 
   def is_capital?([char, last_char | _], capitalword) do
-    if is_upcase?(char) do
-      if is_upcase?(last_char) do
-        true
-      else
+    cond do
+      not is_upcase?(char) ->
+        false
+
+      not is_upcase?(last_char) ->
         capitalword
-      end
-    else
-      false
+
+      true ->
+        false
     end
   end
 end

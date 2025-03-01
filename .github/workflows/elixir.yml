@@ -5,7 +5,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: elixir:1.10-slim
+      image: elixir:1.18-slim
     steps:
     - uses: actions/checkout@v1
     - name: Install dependencies

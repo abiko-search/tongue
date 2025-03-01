@@ -52,7 +52,7 @@ defmodule Tongue.Detector do
               NGram.KANJI_4_10 NGram.KANJI_4_16 NGram.KANJI_4_17 NGram.KANJI_4_18 NGram.KANJI_4_22
               NGram.KANJI_4_24 NGram.KANJI_4_28 NGram.KANJI_4_34 NGram.KANJI_4_39 NGram.KANJI_5_10
               NGram.KANJI_5_11 NGram.KANJI_5_12 NGram.KANJI_5_13 NGram.KANJI_5_14 NGram.KANJI_5_18
-              NGram.KANJI_5_26 NGram.KANJI_5_29 NGram.KANJI_5_34 NGram.KANJI_5_39 NGram.KANJI_6_0 
+              NGram.KANJI_5_26 NGram.KANJI_5_29 NGram.KANJI_5_34 NGram.KANJI_5_39 NGram.KANJI_6_0
               NGram.KANJI_6_3  NGram.KANJI_6_9  NGram.KANJI_6_10 NGram.KANJI_6_11 NGram.KANJI_6_12
               NGram.KANJI_6_16 NGram.KANJI_6_18 NGram.KANJI_6_20 NGram.KANJI_6_21 NGram.KANJI_6_22
               NGram.KANJI_6_23 NGram.KANJI_6_25 NGram.KANJI_6_28 NGram.KANJI_6_29 NGram.KANJI_6_30
@@ -121,13 +121,12 @@ defmodule Tongue.Detector do
 
   def subset(ngram_frequencies, languages) do
     new_ngram_frequencies =
-
       for {ngram, frequencies} <- ngram_frequencies, into: %{} do
         {_, frequencies} =
           @builtin_languages
           |> Enum.zip(frequencies)
           |> Enum.filter(fn {language, _} -> language in languages end)
-          |> Enum.unzip
+          |> Enum.unzip()
 
         {ngram, frequencies}
       end
@@ -236,12 +235,12 @@ defmodule Tongue.Detector do
 
   def extract_ngrams(text, ngram_frequencies) when is_list(text) do
     text
-    |> extract_ngrams(ngram_frequencies, ' ', false)
+    |> extract_ngrams(ngram_frequencies, ~c' ', false)
     |> List.flatten()
   end
 
   def extract_ngrams([?\s | tail], ngram_frequencies, [?\s | _], _) do
-    extract_ngrams(tail, ngram_frequencies, ' ', false)
+    extract_ngrams(tail, ngram_frequencies, ~c' ', false)
   end
 
   def extract_ngrams([char | tail], ngram_frequencies, [?\s | _], _) do
